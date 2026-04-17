@@ -1,6 +1,6 @@
 ---
 name: outlook
-description: Use when checking Ahmad's recent emails or calendar, creating an inbox digest, summarizing what arrived in a time window, or sending an email/calendar summary to Teams.
+description: Use when checking your recent emails or calendar, creating an inbox digest, summarizing what arrived in a time window, or sending an email/calendar summary to Teams.
 ---
 
 # Outlook Email + Calendar Digest
@@ -105,7 +105,7 @@ Replace `PASTE_DIGEST_HERE` with the digest and `WEBHOOK_URL` with the URL above
 
 Write today's + tomorrow's calendar events to two locations:
 
-**A. Obsidian vault** — overwrite `/Users/ASaeed/Documents/Obsidian Vault/memory/calendar.md`:
+**A. Obsidian vault** — overwrite `$VAULT_MEMORY_PATH/calendar.md`:
 ```markdown
 # Calendar
 
@@ -120,11 +120,11 @@ Last updated: YYYY-MM-DD HH:MM
 
 Fetch tomorrow's events with `mcp__claude_ai_Microsoft_365__outlook_calendar_search` before writing.
 
-**B. Claude auto-memory** — overwrite `/Users/ASaeed/.claude/projects/-Users-ASaeed-glg-apps/memory/calendar_today.md`:
+**B. Claude auto-memory** — overwrite `$CLAUDE_MEMORY_PATH/calendar_today.md`:
 ```markdown
 ---
 name: Today's Calendar
-description: Ahmad's calendar for today and tomorrow, updated by /outlook skill
+description: Your calendar for today and tomorrow, updated by /outlook skill
 type: reference
 ---
 
