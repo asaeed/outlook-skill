@@ -40,13 +40,17 @@ mcp__claude_ai_Microsoft_365__read_resource
 
 ### 4. Categorize Emails
 
+**MEETING** — New meeting invite:
+- Detect via iCalendar content-type, or subject starting with "Invitation:", "Updated invitation:", "Canceled:", or body with meeting invite markers
+- Surface these in a dedicated 📅 section of the digest
+
 **ACTION** — Needs a response or decision:
 - Directly addressed (To:, not just CC:)
 - Subject contains: action, review, approve, decision, ASAP, urgent, deadline, please, ?
 - From: manager, direct report, cross-functional partner, client contact
 
 **FYI** — No action needed but worth noting:
-- Meeting invites, project updates, shared docs, replies in active threads
+- Project updates, shared docs, replies in active threads
 
 **NOISE** — Skip entirely:
 - Noreply/automated senders
@@ -54,18 +58,16 @@ mcp__claude_ai_Microsoft_365__read_resource
 - System alerts (JIRA, GitHub notifications, calendar notifications)
 - CC'd on mass threads with no direct mention
 
-### 5. Format the Combined Digest
+### 5. Format the Email Digest
 
 ```
-📅 **Today's Calendar** (Europe/Brussels)
-• [HH:MM CEST] — [Event title] ([duration])
-
----
-
 **Email Digest** — [HH:MM]–[HH:MM] CEST
 
 🔴 **ACTION NEEDED** ([count])
 • **[Sender name]** — [Subject]: [1-sentence summary of what's needed]
+
+📅 **MEETING INVITES** ([count])
+• **[Sender name]** — [Subject] ([when, in Europe/Brussels])
 
 🟡 **FYI** ([count])
 • **[Sender name]** — [Subject]
@@ -73,11 +75,15 @@ mcp__claude_ai_Microsoft_365__read_resource
 📭 [N] filtered (automated/noise)
 ```
 
-If ACTION count is 0, lead with "✅ All clear" before FYI.
-If no emails in window: skip email sections, write "📭 No new emails."
-If no meetings: `📅 No meetings today.`
+Rules:
+- Omit any section with 0 items
+- If ACTION = 0 and no meeting invites: lead with "✅ All clear"
+- Keep each ACTION bullet to one line
+- **Do not include the calendar section in the Teams digest.** Calendar data goes to memory only (step 7).
 
 ### 6. Post to Teams
+
+**Skip this step entirely if there is no new non-noise mail** (i.e. ACTION + MEETING + FYI all zero, or zero emails in window). No Teams message at all in that case.
 
 ```bash
 python3 - <<'PYEOF'
@@ -138,4 +144,4 @@ Then ensure `MEMORY.md` has an entry for `calendar_today.md`. If missing, add:
 Show the digest in chat first, then ask before posting to Teams.
 
 ## Scheduled Invocation
-Post directly without confirmation. Skip step 7 (can't write to local files).
+Runs via `run-local.sh` on the local machine (launchd). Post directly without confirmation, and still perform step 7 (calendar memory update) since the scheduled runner is local, not remote.

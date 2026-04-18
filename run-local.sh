@@ -25,7 +25,7 @@ LOG="$LOG_DIR/$(date +%Y-%m-%d).log"
   echo ""
   echo "=== $(date -u '+%Y-%m-%dT%H:%M:%SZ') — starting ==="
   /Users/ASaeed/.local/bin/claude \
-    -p "Run the /outlook skill as a scheduled invocation: post the email + calendar digest directly to Teams without asking for confirmation. Also perform step 7 (update local calendar memory files) since we're running locally." \
+    -p "Run the /outlook skill as a scheduled invocation. Post the email digest directly to Teams without asking for confirmation — but only if there is new non-noise mail in the window. If there are zero new emails, or only noise, DO NOT post to Teams. Do not include the calendar section in the Teams message; calendar data goes to memory only. If a new meeting invite email arrives, surface it in the digest's 📅 MEETING INVITES section. Always perform step 7 (update local calendar memory files) since we're running locally." \
     --allowedTools "Bash,Read,Write,Edit,mcp__claude_ai_Microsoft_365__outlook_calendar_search,mcp__claude_ai_Microsoft_365__outlook_email_search,mcp__claude_ai_Microsoft_365__read_resource"
   echo "=== $(date -u '+%Y-%m-%dT%H:%M:%SZ') — finished (exit $?) ==="
 } >> "$LOG" 2>&1
