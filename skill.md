@@ -60,24 +60,37 @@ mcp__claude_ai_Microsoft_365__read_resource
 
 ### 5. Format the Email Digest
 
+Teams collapses whitespace after markdown list items, so sections render cramped together. To force breathing room, insert a paragraph containing just `&nbsp;` between each section (and before the filtered footer). Also: use markdown dashes (`-`) for bullets, not `•` — Teams does not style `•` as a list.
+
 ```
 **Email Digest** — [HH:MM]–[HH:MM] CEST
 
-🔴 **ACTION NEEDED** ([count])
-• **[Sender name]** — [Subject]: [1-sentence summary of what's needed]
+---
 
-📅 **MEETING INVITES** ([count])
-• **[Sender name]** — [Subject] ([when, in Europe/Brussels])
+**🔴 ACTION NEEDED ([count])**
 
-🟡 **FYI** ([count])
-• **[Sender name]** — [Subject]
+- **[Sender name]** — [Subject]: [1-sentence summary of what's needed]
 
-📭 [N] filtered (automated/noise)
+&nbsp;
+
+**📅 MEETING INVITES ([count])**
+
+- **[Sender name]** — [Subject] ([when, in Europe/Brussels])
+
+&nbsp;
+
+**🟡 FYI ([count])**
+
+- **[Sender name]** — [Subject]
+
+&nbsp;
+
+_📭 [N] filtered (automated/noise)_
 ```
 
 Rules:
-- Omit any section with 0 items
-- If ACTION = 0 and no meeting invites: lead with "✅ All clear"
+- Omit any section with 0 items AND its preceding `&nbsp;` spacer (don't leave orphan spacers)
+- If ACTION = 0 and no meeting invites: lead with "**✅ All clear**" on its own line instead of the ACTION section
 - Keep each ACTION bullet to one line
 - **Do not include the calendar section in the Teams digest.** Calendar data goes to memory only (step 7).
 
