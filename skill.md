@@ -23,7 +23,7 @@ All times rendered in Europe/Brussels (CEST during DST / CET otherwise). Append 
 ### 2. Search Recent Emails
 Use `mcp__claude_ai_Microsoft_365__outlook_email_search` to find emails in the window.
 - Manual invocation: default to last 2 hours
-- Scheduled: last 75 minutes (overlap allowed — cron drift protection)
+- Scheduled: the scheduler passes an explicit `afterDateTime` (carried forward from the last successful run's start time, so no mail is missed across cron drift or laptop sleep). Use it exactly as given — do not compute your own window.
 
 ```
 afterDateTime: [ISO timestamp]
@@ -144,4 +144,4 @@ Then ensure `MEMORY.md` has an entry for `calendar_today.md`. If missing, add:
 Show the digest in chat first, then ask before posting to Teams.
 
 ## Scheduled Invocation
-Runs via `run-local.sh` on the local machine (launchd). Post directly without confirmation, and still perform step 7 (calendar memory update) since the scheduled runner is local, not remote.
+Runs via `run-local.sh` on the local machine (launchd). The runner persists each successful run's start timestamp to `~/Library/Application Support/outlook-digest/last-run.txt` and passes it as `afterDateTime` on the next run, so every run picks up where the last left off — no mail missed across cron drift, laptop sleep, or skipped firings. State is only advanced on exit 0, so a failed run retries the same window. Post directly without confirmation, and still perform step 7 (calendar memory update) since the runner is local, not remote.
