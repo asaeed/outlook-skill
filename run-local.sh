@@ -5,13 +5,26 @@
 #
 # Runs only during 11:00–19:00 local time on weekdays; exits quietly otherwise.
 #
-# State: persists the start timestamp of the last successful run to
+# State: persists the start timestamp after a successful mailbox read and
+# accepted Teams delivery if needed. The checkpoint lives at
 # ~/Library/Application Support/outlook-digest/last-run.txt and uses it as
 # afterDateTime on the next run, so no emails are missed across cron drift,
 # laptop sleep, or skipped firings. If state is missing (first run), falls
 # back to a 75-minute window.
 
-set -e
+set -euo pipefail
+umask 077
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [[ ${1:-} == --preview ]]; then
+  state_file="$HOME/Library/Application Support/outlook-digest/last-run.txt"
+  if [[ -s "$state_file" ]]; then
+    printf 'Checkpoint: %s\n' "$(cat "$state_file")"
+  else
+    printf 'Checkpoint missing; existing first-run window is 75 minutes.\n'
+  fi
+  exit 0
+fi
 
 HOUR=$(date +%H)
 DOW=$(date +%u)  # 1=Mon .. 7=Sun
@@ -22,6 +35,12 @@ fi
 if [ "$HOUR" -lt 11 ] || [ "$HOUR" -gt 19 ]; then
   exit 0
 fi
+
+set -a
+source "$HOME/.config/teams-digests/outlook.env"
+set +a
+: "${TEAMS_WEBHOOK_URL:?Configure the approved Teams workflow}"
+test -s "$HOME/.claude-work/commands/outlook.md"
 
 LOG_DIR="$HOME/Library/Logs/outlook-digest"
 mkdir -p "$LOG_DIR"
@@ -45,17 +64,5 @@ fi
 {
   echo ""
   echo "=== $START_ISO — starting (afterDateTime=$AFTER_ISO) ==="
-  set +e
-  /Users/ASaeed/.local/bin/claude \
-    -p "Run the /outlook skill as a scheduled invocation. Post the email digest directly to Teams without asking for confirmation — but only if there is new non-noise mail in the window. If there are zero new emails, or only noise, DO NOT post to Teams. Do not include the calendar section in the Teams message; calendar data goes to memory only. If a new meeting invite email arrives, surface it in the digest's 📅 MEETING INVITES section. For the email search, use afterDateTime='$AFTER_ISO' exactly as given (do NOT compute your own window — this was provided by the scheduler to pick up from the last run and avoid missing mail). Always perform step 7 (update local calendar memory files) since we're running locally." \
-    --allowedTools "Bash,Read,Write,Edit,mcp__claude_ai_Microsoft_365__outlook_calendar_search,mcp__claude_ai_Microsoft_365__outlook_email_search,mcp__claude_ai_Microsoft_365__read_resource"
-  EXIT=$?
-  set -e
-  echo "=== $(date -u '+%Y-%m-%dT%H:%M:%SZ') — finished (exit $EXIT) ==="
-  if [ "$EXIT" -eq 0 ]; then
-    echo "$START_ISO" > "$STATE_FILE"
-    echo "state: advanced last-run to $START_ISO"
-  else
-    echo "state: NOT advanced (claude exited $EXIT) — next run will re-read from $AFTER_ISO"
-  fi
+  /usr/bin/python3 "$SCRIPT_DIR/run-outlook-digest.py" "$AFTER_ISO" "$START_ISO" "$STATE_FILE"
 } >> "$LOG" 2>&1

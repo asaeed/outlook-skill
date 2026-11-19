@@ -6,10 +6,10 @@ description: Use when checking your recent emails or calendar, creating an inbox
 # Outlook Email + Calendar Digest
 
 ## Overview
-Check today's calendar and recent emails via M365 MCP, write a combined digest, post to Teams, and (for local runs) update Obsidian + Claude memory with calendar data.
+Check today's calendar and recent emails via M365 MCP, write a combined digest, post to Teams, and (for local runs) update Claude memory with calendar data.
 
 ## Teams Webhook URL
-`{{TEAMS_WEBHOOK_URL}}`
+Use the `TEAMS_WEBHOOK_URL` environment variable when posting. Read it inside Python and keep its value out of the prompt, logs and process arguments.
 
 ## Workflow
 
@@ -100,13 +100,13 @@ Rules:
 
 ```bash
 python3 - <<'PYEOF'
-import json, urllib.request
+import json, os, urllib.request
 
 message = """PASTE_DIGEST_HERE"""
 
 payload = json.dumps({"text": message}).encode("utf-8")
 req = urllib.request.Request(
-    "WEBHOOK_URL",
+    os.environ["TEAMS_WEBHOOK_URL"],
     data=payload,
     headers={"Content-Type": "application/json"},
     method="POST"
@@ -116,16 +116,22 @@ with urllib.request.urlopen(req) as r:
 PYEOF
 ```
 
-Replace `PASTE_DIGEST_HERE` with the digest and `WEBHOOK_URL` with the URL above.
+Replace `PASTE_DIGEST_HERE` with the digest.
 
 ### 7. Update Calendar Memory (local runs only)
 
 **This step only applies when invoked locally in a Claude Code session — skip when running as a remote scheduled agent.**
 
-Write today's + tomorrow's calendar events to two locations:
+Write today's + tomorrow's calendar events to Claude auto-memory. Fetch tomorrow's events with `mcp__claude_ai_Microsoft_365__outlook_calendar_search` before writing.
 
-**A. Obsidian vault** — overwrite `$VAULT_MEMORY_PATH/calendar.md`:
+Overwrite `$CLAUDE_MEMORY_PATH/calendar_today.md`:
 ```markdown
+---
+name: Today's Calendar
+description: Your calendar for today and tomorrow, updated by /outlook skill
+type: reference
+---
+
 # Calendar
 
 Last updated: YYYY-MM-DD HH:MM
@@ -137,19 +143,6 @@ Last updated: YYYY-MM-DD HH:MM
 - HH:MM — Event title
 ```
 
-Fetch tomorrow's events with `mcp__claude_ai_Microsoft_365__outlook_calendar_search` before writing.
-
-**B. Claude auto-memory** — overwrite `$CLAUDE_MEMORY_PATH/calendar_today.md`:
-```markdown
----
-name: Today's Calendar
-description: Your calendar for today and tomorrow, updated by /outlook skill
-type: reference
----
-
-[same content as above]
-```
-
 Then ensure `MEMORY.md` has an entry for `calendar_today.md`. If missing, add:
 `- [calendar_today.md](calendar_today.md) — Today's and tomorrow's calendar events, refreshed by /outlook`
 
@@ -157,4 +150,4 @@ Then ensure `MEMORY.md` has an entry for `calendar_today.md`. If missing, add:
 Show the digest in chat first, then ask before posting to Teams.
 
 ## Scheduled Invocation
-Runs via `run-local.sh` on the local machine (launchd). The runner persists each successful run's start timestamp to `~/Library/Application Support/outlook-digest/last-run.txt` and passes it as `afterDateTime` on the next run, so every run picks up where the last left off — no mail missed across cron drift, laptop sleep, or skipped firings. State is only advanced on exit 0, so a failed run retries the same window. Post directly without confirmation, and still perform step 7 (calendar memory update) since the runner is local, not remote.
+Runs via `run-local.sh` on the local machine (launchd). The runner persists each successful run's start timestamp to `~/Library/Application Support/outlook-digest/last-run.txt` and passes it as `afterDateTime` on the next run, so every run picks up where the last left off — no mail missed across cron drift, laptop sleep, or skipped firings. State is only advanced after a mailbox read that covers the requested window and either finds nothing worth posting or gets an accepted Teams post, so a failed run retries the same window. Post directly without confirmation, and still perform step 7 (calendar memory update) since the runner is local, not remote.

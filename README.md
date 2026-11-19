@@ -5,19 +5,17 @@ Outlook email + calendar digest skill for Claude Code. Fetches recent mail and t
 ## Install
 
 ```bash
-cp .env.example .env
-# edit .env, set TEAMS_WEBHOOK_URL
-./install.sh
+./install.sh <claude-work|claude-personal>
 ```
 
-Installs to `~/.claude/commands/outlook.md`. The webhook URL is baked in at install time so it never touches the source repo.
+Installs to `<profile config dir>/commands/outlook.md` (`~/.claude-work` or `~/.claude`) and bakes in that profile's Claude memory path. The Teams webhook is never baked in: the skill reads `TEAMS_WEBHOOK_URL` from the environment at run time (`run-local.sh` loads it from `~/.config/teams-digests/outlook.env`, owner-only).
 
 ## Files
 
-- `skill.md` — source skill template (uses `{{TEAMS_WEBHOOK_URL}}` placeholder)
-- `.env` — local-only, holds `TEAMS_WEBHOOK_URL` and memory paths (gitignored)
-- `install.sh` — substitutes placeholders and writes to `~/.claude/commands/outlook.md`
-- `run-local.sh` — headless wrapper for scheduling via launchd/cron; fires `claude -p` with the skill
+- `skill.md` — source skill template (uses `$CLAUDE_MEMORY_PATH` placeholder)
+- `install.sh <profile>` — substitutes placeholders and writes to the profile's `commands/outlook.md`
+- `run-local.sh` — headless wrapper for scheduling via launchd/cron; fires `claude-work -p` with the skill, loading `TEAMS_WEBHOOK_URL` from `~/.config/teams-digests/outlook.env`
+- `run-outlook-digest.py` — called by `run-local.sh`: runs `claude-work -p`, checks the Inbox read covered the requested window, and advances the checkpoint only after an empty/noise-only read or an accepted Teams post
 
 ## Scheduling locally (launchd)
 
